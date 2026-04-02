@@ -56,6 +56,10 @@ src/
       colors.ts           # Hex color constants for OpenTUI
       stat-bars.ts        # ASCII stat bar visualization
 tests/                    # Vitest test files (mirrors src/ structure)
+skill/                    # Claude Code skill (standalone, zero-dep)
+  SKILL.md                # Skill definition (slash command metadata + workflow)
+  sprites.md              # ASCII art for AskUserQuestion previews
+  scripts/                # Self-contained Node.js scripts (no npm install)
 ```
 
 ### Path Aliases
