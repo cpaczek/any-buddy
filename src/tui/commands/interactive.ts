@@ -28,14 +28,44 @@ import {
   selectRarity,
   selectHat,
   selectStat,
+  selectMode,
+  selectPreset,
 } from '../prompts.ts';
+import { PRESETS } from '@/presets.js';
 import { allTraitsFlagged } from '../builder/state.ts';
 
 const MIN_SALT_COUNT = platform() === 'win32' ? 1 : 3;
 
-async function runSequentialSelection(flags: CliFlags): Promise<DesiredTraits> {
-  console.log(chalk.bold('  Choose your new pet:\n'));
+function resolvePreset(
+  presetName: string,
+): Pick<DesiredTraits, 'species' | 'eye' | 'rarity' | 'hat'> {
+  const match = PRESETS.find((p) => p.name.toLowerCase() === presetName.toLowerCase());
+  if (!match) {
+    const names = PRESETS.map((p) => `"${p.name}"`).join(', ');
+    throw new Error(`Unknown preset "${presetName}". Available: ${names}`);
+  }
+  return { species: match.species, eye: match.eye, rarity: match.rarity, hat: match.hat };
+}
 
+async function selectCoreTraits(
+  flags: CliFlags,
+): Promise<Pick<DesiredTraits, 'species' | 'eye' | 'rarity' | 'hat'>> {
+  // --preset flag: resolve by name
+  if (flags.preset) {
+    return resolvePreset(flags.preset);
+  }
+
+  // If no attribute flags, offer preset vs custom choice
+  const hasAttributeFlags = flags.species || flags.eye || flags.rarity || flags.hat;
+  if (!hasAttributeFlags) {
+    const mode = await selectMode();
+    if (mode === 'preset') {
+      const chosen = await selectPreset();
+      return { species: chosen.species, eye: chosen.eye, rarity: chosen.rarity, hat: chosen.hat };
+    }
+  }
+
+  // Manual selection
   const species = validateFlag('species', flags.species, SPECIES) ?? (await selectSpecies());
   const eye = validateFlag('eye', flags.eye, EYES) ?? (await selectEyes(species));
   const rarity = validateFlag('rarity', flags.rarity, RARITIES) ?? (await selectRarity());
@@ -43,6 +73,15 @@ async function runSequentialSelection(flags: CliFlags): Promise<DesiredTraits> {
     rarity === 'common'
       ? ('none' as const)
       : (validateFlag('hat', flags.hat, HATS) ?? (await selectHat(species, eye, rarity)));
+
+  return { species, eye, rarity, hat };
+}
+
+async function runSequentialSelection(flags: CliFlags): Promise<DesiredTraits> {
+  console.log(chalk.bold('  Choose your new pet:\n'));
+
+  const { species, eye, rarity, hat } = await selectCoreTraits(flags);
+
   const shiny =
     flags.shiny ??
     (await confirm({

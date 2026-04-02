@@ -117,6 +117,7 @@ export interface CliFlags {
   hat?: string;
   name?: string;
   personality?: string;
+  preset?: string;
   shiny?: boolean;
   peak?: string;
   dump?: string;

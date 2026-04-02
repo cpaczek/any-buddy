@@ -56,6 +56,8 @@ function parseArgs(argv: string[]): { command: string | undefined; flags: CliFla
       flags.name = args[++i];
     } else if (arg === '--personality' || arg === '-p') {
       flags.personality = args[++i];
+    } else if (arg === '--preset') {
+      flags.preset = args[++i];
     } else if (arg === '--shiny') {
       flags.shiny = true;
     } else if (arg === '--peak') {
@@ -127,6 +129,7 @@ Usage:
   any-buddy --species dragon         Skip species prompt
   any-buddy -s cat -r legendary -e ✦ -t wizard -y
                                      Fully non-interactive
+  any-buddy --preset "Arcane Dragon"  Use a curated preset build
   any-buddy preview                  Browse pets without applying
   any-buddy current                  Show your current pet
   any-buddy apply [--silent]         Re-apply saved pet after update
@@ -134,6 +137,7 @@ Usage:
   any-buddy rehatch                  Delete companion to re-hatch via /buddy
 
 Options:
+  --preset <name>        Use a curated preset (e.g., "Arcane Dragon", "Royal Capybara")
   -s, --species <name>   Species (duck, goose, blob, cat, dragon, octopus, owl,
                          penguin, turtle, snail, ghost, axolotl, capybara,
                          cactus, robot, rabbit, mushroom, chonk)

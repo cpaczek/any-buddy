@@ -10,6 +10,7 @@ import {
   STAT_NAMES,
 } from '@/constants.js';
 import { renderSprite, renderFace } from '@/sprites/index.js';
+import { PRESETS, type Preset } from '@/presets.js';
 import { RARITY_CHALK } from './format.ts';
 import chalk from 'chalk';
 
@@ -78,4 +79,44 @@ export async function selectHat(species: Species, eye: Eye, rarity: Rarity): Pro
 export async function selectStat(label: string, exclude?: StatName): Promise<StatName> {
   const choices = STAT_NAMES.filter((s) => s !== exclude).map((s) => ({ name: s, value: s }));
   return select({ message: label, choices });
+}
+
+export async function selectMode(): Promise<'preset' | 'custom'> {
+  return select({
+    message: 'How do you want to pick?',
+    choices: [
+      { name: 'Browse presets — curated themed builds', value: 'preset' as const },
+      { name: 'Customize — pick each attribute yourself', value: 'custom' as const },
+    ],
+  });
+}
+
+export async function selectPreset(): Promise<Preset> {
+  return select({
+    message: 'Pick a preset',
+    choices: PRESETS.map((p) => {
+      const color = RARITY_CHALK[p.rarity] || chalk.white;
+      const face = renderFace({ species: p.species, eye: p.eye });
+      const stars = RARITY_STARS[p.rarity] || '';
+      // Full sprite preview shown below the highlighted choice
+      const bones = {
+        species: p.species,
+        eye: p.eye,
+        hat: p.hat,
+        rarity: p.rarity,
+        shiny: false,
+        stats: {},
+      };
+      const sprite = renderSprite(bones, 0)
+        .map((l) => '    ' + color(l))
+        .join('\n');
+      const info = `  ${color(`${p.rarity} ${p.species}`)}  eyes: ${p.eye}  hat: ${p.hat}`;
+      return {
+        name: color(`${p.name.padEnd(22)} ${stars.padEnd(6)} ${face}  ${chalk.dim(p.description)}`),
+        value: p,
+        description: `\n${sprite}\n${info}`,
+      };
+    }),
+    pageSize: 12,
+  });
 }
