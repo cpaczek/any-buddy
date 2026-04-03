@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { execSync } from 'child_process';
+
 import { confirm, input, select } from '@inquirer/prompts';
 import type { CliFlags, DesiredTraits } from '@/types.js';
 import { SPECIES, EYES, RARITIES, HATS, STAT_NAMES, ORIGINAL_SALT } from '@/constants.js';
@@ -14,6 +14,7 @@ import {
 } from '@/patcher/salt-ops.js';
 import { patchBinary } from '@/patcher/patch.js';
 import { runPreflight } from '@/patcher/preflight.js';
+import { execWithSudo } from '@/patcher/sudo.js';
 import {
   loadPetConfig,
   loadPetConfigV2,
@@ -174,20 +175,7 @@ function runSetup(): SetupResult {
   }
 
   if (preflight.needsSudo && process.getuid?.() !== 0) {
-    const args = process.argv.slice(1);
-    console.log(chalk.yellow('  Binary requires elevated permissions. Re-running with sudo...\n'));
-    try {
-      execSync(
-        `sudo --preserve-env=HOME ${process.execPath} ${args.map((a) => `"${a}"`).join(' ')}`,
-        {
-          stdio: 'inherit',
-        },
-      );
-      process.exit(0);
-    } catch {
-      console.error(chalk.red('  Sudo failed. Try: sudo any-buddy'));
-      process.exit(1);
-    }
+    execWithSudo(preflight);
   }
   const userId = preflight.userId;
   const binaryPath = preflight.binaryPath;

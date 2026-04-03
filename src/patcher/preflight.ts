@@ -16,10 +16,12 @@ export function runPreflight({ requireBinary = true } = {}): PreflightResult {
 
   // 1. Check bun is installed (deferred — may not be needed for Node-based installs)
   let bunVersion: string | null = null;
+  let bunPath: string | null = null;
   let bunMissing = false;
   try {
-    const bunPath = findBunBinary();
-    bunVersion = execSync(`"${bunPath}" --version`, { encoding: 'utf-8', timeout: 5000 }).trim();
+    const resolved = findBunBinary();
+    bunVersion = execSync(`"${resolved}" --version`, { encoding: 'utf-8', timeout: 5000 }).trim();
+    bunPath = resolved;
   } catch {
     bunMissing = true;
   }
@@ -176,8 +178,8 @@ export function runPreflight({ requireBinary = true } = {}): PreflightResult {
     for (const e of errors) {
       console.log(chalk.red(`  Error: ${e}\n`));
     }
-    return { ok: false, binaryPath, userId, saltCount, bunVersion, needsSudo };
+    return { ok: false, binaryPath, userId, saltCount, bunVersion, bunPath, needsSudo };
   }
 
-  return { ok: true, binaryPath, userId, saltCount, bunVersion, needsSudo };
+  return { ok: true, binaryPath, userId, saltCount, bunVersion, bunPath, needsSudo };
 }

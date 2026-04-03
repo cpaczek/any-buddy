@@ -186,6 +186,10 @@ export function findClaudeBinary(): string {
 }
 
 export function findBunBinary(): string {
+  if (process.env.ANYBUDDY_BUN_PATH && existsSync(process.env.ANYBUDDY_BUN_PATH)) {
+    return process.env.ANYBUDDY_BUN_PATH;
+  }
+
   const onPath = which('bun');
   if (onPath) return onPath;
 

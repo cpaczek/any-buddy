@@ -96,6 +96,7 @@ export interface PreflightResult {
   userId: string;
   saltCount: number;
   bunVersion: string | null;
+  bunPath: string | null;
   needsSudo: boolean;
 }
 
