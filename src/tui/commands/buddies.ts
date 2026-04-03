@@ -56,9 +56,12 @@ export async function runBuddies(): Promise<void> {
     const args = process.argv.slice(1);
     console.log(chalk.yellow('  Binary requires elevated permissions. Re-running with sudo...\n'));
     try {
-      execSync(`sudo ${process.execPath} ${args.map((a) => `"${a}"`).join(' ')}`, {
-        stdio: 'inherit',
-      });
+      execSync(
+        `sudo --preserve-env=HOME ${process.execPath} ${args.map((a) => `"${a}"`).join(' ')}`,
+        {
+          stdio: 'inherit',
+        },
+      );
       process.exit(0);
     } catch {
       console.error(chalk.red('  Sudo failed. Try: sudo any-buddy'));

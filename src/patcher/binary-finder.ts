@@ -194,6 +194,13 @@ export function findBunBinary(): string {
     ? [join(home, '.bun', 'bin', 'bun.exe'), join(home, '.volta', 'bin', 'bun.exe')]
     : [join(home, '.bun', 'bin', 'bun'), '/usr/local/bin/bun', join(home, '.volta', 'bin', 'bun')];
 
+  // Under sudo, homedir() returns /root — also check the original user's home.
+  const sudoUser = process.env.SUDO_USER;
+  if (sudoUser && !IS_WIN) {
+    const sudoHome = IS_MAC ? join('/Users', sudoUser) : join('/home', sudoUser);
+    candidates.push(join(sudoHome, '.bun', 'bin', 'bun'), join(sudoHome, '.volta', 'bin', 'bun'));
+  }
+
   for (const candidate of candidates) {
     if (existsSync(candidate)) return realpath(candidate);
   }
