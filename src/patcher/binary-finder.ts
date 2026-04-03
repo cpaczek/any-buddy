@@ -58,6 +58,7 @@ function getPlatformCandidates(): string[] {
   return [
     join(home, '.local', 'bin', 'claude'),
     '/usr/local/bin/claude',
+    '/opt/claude-code/bin/claude',
     '/usr/bin/claude',
     join(home, '.npm-global', 'bin', 'claude'),
     join(home, '.volta', 'bin', 'claude'),
@@ -77,6 +78,27 @@ function resolveWindowsShim(cmdPath: string): string | null {
     /* ignore */
   }
   return null;
+}
+
+export function resolveShellWrapper(scriptPath: string): string | null {
+  if (IS_WIN) return null;
+  try {
+    const content = readFileSync(scriptPath, 'utf-8');
+    if (!content.startsWith('#!')) return null;
+
+    const match = content.match(/^\s*exec\s+(\/\S+)/m);
+    if (!match) return null;
+
+    const target = match[1];
+    if (!existsSync(target)) return null;
+
+    const size = statSync(target).size;
+    if (size < 1_000_000) return null;
+
+    return target;
+  } catch {
+    return null;
+  }
 }
 
 function resolveFromPackageDir(resolvedPath: string): string | null {
@@ -119,6 +141,9 @@ export function findClaudeBinary(): string {
       if (size >= 1_000_000) {
         return resolved;
       }
+      const fromWrapper = resolveShellWrapper(resolved);
+      if (fromWrapper) return fromWrapper;
+
       const fromPkg = resolveFromPackageDir(resolved);
       if (fromPkg) return fromPkg;
 

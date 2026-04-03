@@ -1,4 +1,4 @@
-export { findClaudeBinary, findBunBinary } from './binary-finder.ts';
+export { findClaudeBinary, findBunBinary, resolveShellWrapper } from './binary-finder.ts';
 export {
   findAllOccurrences,
   getCurrentSalt,
