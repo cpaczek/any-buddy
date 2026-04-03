@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { execSync } from 'child_process';
 import { select } from '@inquirer/prompts';
 import { ORIGINAL_SALT, RARITY_STARS } from '@/constants.js';
 import { roll } from '@/generation/index.js';
@@ -49,6 +50,20 @@ export async function runBuddies(): Promise<void> {
   const preflight = runPreflight({ requireBinary: true });
   if (!preflight.ok || !preflight.binaryPath) {
     process.exit(1);
+  }
+
+  if (preflight.needsSudo && process.getuid?.() !== 0) {
+    const args = process.argv.slice(1);
+    console.log(chalk.yellow('  Binary requires elevated permissions. Re-running with sudo...\n'));
+    try {
+      execSync(`sudo ${process.execPath} ${args.map((a) => `"${a}"`).join(' ')}`, {
+        stdio: 'inherit',
+      });
+      process.exit(0);
+    } catch {
+      console.error(chalk.red('  Sudo failed. Try: sudo any-buddy'));
+      process.exit(1);
+    }
   }
 
   const config = loadPetConfigV2();

@@ -7,8 +7,11 @@ import {
   unlinkSync,
   renameSync,
   existsSync,
+  accessSync,
+  constants,
 } from 'fs';
 import { execSync } from 'child_process';
+import { dirname } from 'path';
 import { platform } from 'os';
 import type { PatchResult } from '@/types.js';
 import { ORIGINAL_SALT } from '@/constants.js';
@@ -34,6 +37,15 @@ export function patchBinary(binaryPath: string, oldSalt: string, newSalt: string
   if (oldSalt.length !== newSalt.length) {
     throw new Error(
       `Salt length mismatch: old=${oldSalt.length}, new=${newSalt.length}. Must be ${ORIGINAL_SALT.length} chars.`,
+    );
+  }
+
+  try {
+    accessSync(dirname(binaryPath), constants.W_OK);
+  } catch {
+    throw new Error(
+      `No write permission on ${dirname(binaryPath)}.\n` +
+        '  The binary is owned by root. Run with: sudo any-buddy',
     );
   }
 

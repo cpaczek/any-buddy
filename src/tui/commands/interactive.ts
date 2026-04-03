@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { execSync } from 'child_process';
 import { confirm, input, select } from '@inquirer/prompts';
 import type { CliFlags, DesiredTraits } from '@/types.js';
 import { SPECIES, EYES, RARITIES, HATS, STAT_NAMES, ORIGINAL_SALT } from '@/constants.js';
@@ -170,6 +171,20 @@ function runSetup(): SetupResult {
   const preflight = runPreflight({ requireBinary: true });
   if (!preflight.ok || !preflight.binaryPath) {
     process.exit(1);
+  }
+
+  if (preflight.needsSudo && process.getuid?.() !== 0) {
+    const args = process.argv.slice(1);
+    console.log(chalk.yellow('  Binary requires elevated permissions. Re-running with sudo...\n'));
+    try {
+      execSync(`sudo ${process.execPath} ${args.map((a) => `"${a}"`).join(' ')}`, {
+        stdio: 'inherit',
+      });
+      process.exit(0);
+    } catch {
+      console.error(chalk.red('  Sudo failed. Try: sudo any-buddy'));
+      process.exit(1);
+    }
   }
   const userId = preflight.userId;
   const binaryPath = preflight.binaryPath;

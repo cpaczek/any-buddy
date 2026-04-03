@@ -1,5 +1,6 @@
-import { statSync } from 'fs';
+import { statSync, accessSync, constants } from 'fs';
 import { execSync } from 'child_process';
+import { dirname } from 'path';
 import { platform } from 'os';
 import chalk from 'chalk';
 import type { PreflightResult } from '@/types.js';
@@ -157,6 +158,16 @@ export function runPreflight({ requireBinary = true } = {}): PreflightResult {
     );
   }
 
+  // 4. Check write permission on binary directory
+  let needsSudo = false;
+  if (binaryPath) {
+    try {
+      accessSync(dirname(binaryPath), constants.W_OK);
+    } catch {
+      needsSudo = true;
+    }
+  }
+
   for (const w of warnings) {
     console.log(chalk.yellow(`  Warning: ${w}\n`));
   }
@@ -165,8 +176,8 @@ export function runPreflight({ requireBinary = true } = {}): PreflightResult {
     for (const e of errors) {
       console.log(chalk.red(`  Error: ${e}\n`));
     }
-    return { ok: false, binaryPath, userId, saltCount, bunVersion };
+    return { ok: false, binaryPath, userId, saltCount, bunVersion, needsSudo };
   }
 
-  return { ok: true, binaryPath, userId, saltCount, bunVersion };
+  return { ok: true, binaryPath, userId, saltCount, bunVersion, needsSudo };
 }

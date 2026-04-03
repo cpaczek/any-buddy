@@ -96,6 +96,7 @@ export interface PreflightResult {
   userId: string;
   saltCount: number;
   bunVersion: string | null;
+  needsSudo: boolean;
 }
 
 export interface PetConfig {

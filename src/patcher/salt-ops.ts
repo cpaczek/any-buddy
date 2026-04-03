@@ -45,7 +45,7 @@ export function isClaudeRunning(binaryPath: string): boolean {
       return out.includes('claude.exe');
     }
     const name = basename(binaryPath);
-    const out = execSync(`pgrep -f "${name}" 2>/dev/null || true`, { encoding: 'utf-8' });
+    const out = execSync(`pgrep -x "${name}" 2>/dev/null || true`, { encoding: 'utf-8' });
     return out.trim().length > 0;
   } catch {
     return false;

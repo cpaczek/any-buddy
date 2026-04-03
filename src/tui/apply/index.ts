@@ -608,8 +608,16 @@ export async function runApplyTUI(
 
           case 'confirm_patch':
             if (key.name === 'return' || key.name === 'y') {
-              doPatch();
-              showStep('confirm_hook');
+              try {
+                doPatch();
+                showStep('confirm_hook');
+              } catch (err) {
+                clearStep();
+                addText(`  Patch failed: ${(err as Error).message}`, '#ff5555');
+                helpBar.content = '  Enter to exit';
+                helpBar.fg = '#ff5555';
+                currentStep = 'done';
+              }
             } else if (key.name === 'escape' || key.name === 'n') {
               showStep('confirm_hook');
             }
