@@ -7,7 +7,7 @@ import { ISSUE_URL, diagnostics } from '@/constants.js';
 const IS_WIN = platform() === 'win32';
 const IS_MAC = platform() === 'darwin';
 
-export const MIN_SUPPORTED_VERSION = '1.0.16';
+export const MIN_SUPPORTED_VERSION = '2.1.89';
 
 export interface ClaudeBinaryInfo {
   path: string;
