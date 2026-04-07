@@ -13,6 +13,7 @@ import { renderSprite, renderFace } from '@/sprites/index.js';
 import { PRESETS, type Preset } from '@/presets.js';
 import { RARITY_CHALK } from './format.ts';
 import chalk from 'chalk';
+import type { ClaudeBinaryInfo } from '@/patcher/binary-finder.js';
 
 export function validateFlag<T extends string>(
   name: string,
@@ -157,5 +158,41 @@ export async function selectPreset(): Promise<Preset> {
       };
     }),
     pageSize: 12,
+  });
+}
+
+const SOURCE_LABELS: Record<ClaudeBinaryInfo['source'], string> = {
+  brew: 'Homebrew',
+  npm: 'npm',
+  local: 'Local install',
+  volta: 'Volta',
+  system: 'System',
+  unknown: 'Unknown',
+};
+
+export async function selectClaudeBinary(binaries: ClaudeBinaryInfo[]): Promise<string> {
+  const supported = binaries.filter((b) => b.supported);
+  const unsupported = binaries.filter((b) => !b.supported);
+
+  const choices = [
+    ...supported.map((b) => ({
+      name: `${chalk.green(SOURCE_LABELS[b.source])}  v${b.version}  ${chalk.dim(b.path)}`,
+      value: b.path,
+    })),
+    ...unsupported.map((b) => ({
+      name:
+        chalk.strikethrough(
+          chalk.dim(
+            `${SOURCE_LABELS[b.source]}  ${b.version ? `v${b.version}` : 'unknown version'}  ${b.path}`,
+          ),
+        ) + chalk.red('  (unsupported — update to use any-buddy)'),
+      value: b.path,
+      disabled: true as const,
+    })),
+  ];
+
+  return select({
+    message: 'Multiple Claude Code installations found — which one should any-buddy patch?',
+    choices,
   });
 }

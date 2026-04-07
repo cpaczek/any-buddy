@@ -4,12 +4,20 @@ import { platform } from 'os';
 import chalk from 'chalk';
 import type { PreflightResult } from '@/types.js';
 import { ORIGINAL_SALT, ISSUE_URL, diagnostics } from '@/constants.js';
-import { findClaudeBinary, findBunBinary } from './binary-finder.ts';
+import {
+  findClaudeBinary,
+  findBunBinary,
+  findAllClaudeBinaries,
+  MIN_SUPPORTED_VERSION,
+} from './binary-finder.ts';
 import { restoreBinary } from './patch.ts';
 import { verifySalt, isNodeRuntime, getMinSaltCount } from './salt-ops.ts';
 import { getClaudeUserId, loadPetConfig } from '@/config/index.js';
 
-export function runPreflight({ requireBinary = true } = {}): PreflightResult {
+export async function runPreflight({
+  requireBinary = true,
+  silent = false,
+} = {}): Promise<PreflightResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -38,10 +46,64 @@ export function runPreflight({ requireBinary = true } = {}): PreflightResult {
   let saltCount = 0;
 
   if (requireBinary) {
-    try {
-      binaryPath = findClaudeBinary();
-    } catch (err) {
-      errors.push((err as Error).message);
+    // Check for multiple installations and prompt user to select
+    if (!process.env.CLAUDE_BINARY && !silent) {
+      const allBinaries = findAllClaudeBinaries();
+      if (allBinaries.length > 1) {
+        const supported = allBinaries.filter((b) => b.supported);
+        const unsupported = allBinaries.filter((b) => !b.supported);
+
+        console.log(chalk.yellow(`\n  Found ${allBinaries.length} Claude Code installation(s):\n`));
+
+        for (const b of allBinaries) {
+          const ver = b.version ? `v${b.version}` : 'unknown version';
+          const src = b.source.charAt(0).toUpperCase() + b.source.slice(1);
+          if (b.supported) {
+            console.log(chalk.green(`    ${src} ${ver}  ${chalk.dim(b.path)}`));
+          } else {
+            console.log(
+              chalk.red(
+                `    ${src} ${ver}  ${chalk.dim(b.path)}  (requires v${MIN_SUPPORTED_VERSION}+)`,
+              ),
+            );
+          }
+        }
+        console.log();
+
+        if (supported.length === 0) {
+          errors.push(
+            `All ${allBinaries.length} Claude Code installations are too old.\n` +
+              `  any-buddy requires Claude Code v${MIN_SUPPORTED_VERSION} or newer.\n` +
+              '  Please update Claude Code and try again.',
+          );
+        } else if (supported.length === 1) {
+          binaryPath = supported[0].path;
+          if (unsupported.length > 0) {
+            console.log(
+              chalk.dim(
+                `  Auto-selected the only supported installation (${supported[0].source} v${supported[0].version}).`,
+              ),
+            );
+            console.log(chalk.dim(`  Tip: Remove old installations to avoid confusion.\n`));
+          }
+        } else {
+          try {
+            const { selectClaudeBinary } = await import('@/tui/prompts.js');
+            binaryPath = await selectClaudeBinary(allBinaries);
+          } catch {
+            // Prompt failed (non-interactive) — fall back to auto-selection
+            binaryPath = findClaudeBinary();
+          }
+        }
+      }
+    }
+
+    if (!binaryPath) {
+      try {
+        binaryPath = findClaudeBinary();
+      } catch (err) {
+        errors.push((err as Error).message);
+      }
     }
 
     if (binaryPath) {

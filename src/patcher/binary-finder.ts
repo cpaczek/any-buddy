@@ -7,9 +7,18 @@ import { ISSUE_URL, diagnostics } from '@/constants.js';
 const IS_WIN = platform() === 'win32';
 const IS_MAC = platform() === 'darwin';
 
+export const MIN_SUPPORTED_VERSION = '1.0.16';
+
+export interface ClaudeBinaryInfo {
+  path: string;
+  version: string | null;
+  source: 'brew' | 'npm' | 'local' | 'volta' | 'system' | 'unknown';
+  supported: boolean;
+}
+
 function which(cmd: string): string | null {
   try {
-    const shellCmd = IS_WIN ? `where ${cmd}` : `which ${cmd}`;
+    const shellCmd = IS_WIN ? `where ${cmd}` : `which -a ${cmd}`;
     const result = execSync(shellCmd, {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -20,6 +29,32 @@ function which(cmd: string): string | null {
     /* ignore */
   }
   return null;
+}
+
+function whichAll(cmd: string): string[] {
+  try {
+    const shellCmd = IS_WIN ? `where ${cmd}` : `which -a ${cmd}`;
+    const result = execSync(shellCmd, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+    return result
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l && existsSync(l));
+  } catch {
+    /* ignore */
+  }
+  return [];
+}
+
+function isNpmManagedPath(resolvedPath: string): boolean {
+  const lower = resolvedPath.toLowerCase();
+  return (
+    lower.includes('node_modules') ||
+    lower.includes('.npm-global') ||
+    lower.includes(join('npm', 'node_modules').toLowerCase())
+  );
 }
 
 function realpath(p: string): string {
@@ -98,6 +133,102 @@ function resolveFromPackageDir(resolvedPath: string): string | null {
   return null;
 }
 
+export function getClaudeVersion(binaryPath: string): string | null {
+  try {
+    const output = execSync(`"${binaryPath}" --version`, {
+      encoding: 'utf-8',
+      timeout: 10000,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+    // Output is like "2.1.92 (Claude Code)" — extract the version number
+    const match = output.match(/^([\d.]+)/);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+export function compareVersions(a: string, b: string): number {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const na = pa[i] ?? 0;
+    const nb = pb[i] ?? 0;
+    if (na !== nb) return na - nb;
+  }
+  return 0;
+}
+
+function classifySource(resolvedPath: string): ClaudeBinaryInfo['source'] {
+  const lower = resolvedPath.toLowerCase();
+  if (lower.includes('/homebrew/') || lower.includes('/brew/')) return 'brew';
+  if (isNpmManagedPath(resolvedPath)) return 'npm';
+  if (lower.includes('.volta')) return 'volta';
+  if (lower.includes('.local/bin') || lower.includes('.claude/local')) return 'local';
+  if (lower.includes('/usr/local/bin') || lower.includes('/usr/bin')) return 'system';
+  return 'unknown';
+}
+
+function resolveOneBinary(onPath: string): string | null {
+  const resolved = realpath(onPath);
+
+  if (IS_WIN && resolved.endsWith('.cmd')) {
+    const target = resolveWindowsShim(resolved);
+    if (target) return target;
+  }
+
+  try {
+    const size = statSync(resolved).size;
+    if (size >= 1_000_000) return resolved;
+
+    const fromPkg = resolveFromPackageDir(resolved);
+    if (fromPkg) return fromPkg;
+
+    if (IS_WIN && !resolved.endsWith('.cmd')) {
+      const target = resolveWindowsShim(resolved + '.cmd');
+      if (target) return target;
+    }
+  } catch {
+    return resolved;
+  }
+
+  return null;
+}
+
+export function findAllClaudeBinaries(): ClaudeBinaryInfo[] {
+  const seen = new Set<string>();
+  const results: ClaudeBinaryInfo[] = [];
+
+  function addCandidate(path: string) {
+    const resolved = realpath(path);
+    if (seen.has(resolved)) return;
+    seen.add(resolved);
+
+    const version = getClaudeVersion(resolved);
+    const source = classifySource(resolved);
+    const supported = version ? compareVersions(version, MIN_SUPPORTED_VERSION) >= 0 : false;
+    results.push({ path: resolved, version, source, supported });
+  }
+
+  // From PATH
+  const allOnPath = whichAll('claude');
+  for (const onPath of allOnPath) {
+    const resolved = resolveOneBinary(onPath);
+    if (resolved) addCandidate(resolved);
+  }
+
+  // From platform candidates
+  const candidates = getPlatformCandidates();
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      addCandidate(candidate);
+    }
+  }
+
+  return results;
+}
+
 export function findClaudeBinary(): string {
   if (process.env.CLAUDE_BINARY) {
     const p = process.env.CLAUDE_BINARY;
@@ -105,30 +236,66 @@ export function findClaudeBinary(): string {
     throw new Error(`CLAUDE_BINARY="${p}" does not exist.`);
   }
 
-  const onPath = which('claude');
-  if (onPath) {
+  const allOnPath = whichAll('claude');
+  let npmFallback: string | null = null;
+
+  for (const onPath of allOnPath) {
     const resolved = realpath(onPath);
 
     if (IS_WIN && resolved.endsWith('.cmd')) {
       const target = resolveWindowsShim(resolved);
-      if (target) return target;
+      if (target) {
+        if (isNpmManagedPath(target)) {
+          npmFallback = npmFallback ?? target;
+          continue;
+        }
+        return target;
+      }
     }
 
     try {
       const size = statSync(resolved).size;
       if (size >= 1_000_000) {
+        if (isNpmManagedPath(resolved)) {
+          npmFallback = npmFallback ?? resolved;
+          continue;
+        }
         return resolved;
       }
       const fromPkg = resolveFromPackageDir(resolved);
-      if (fromPkg) return fromPkg;
+      if (fromPkg) {
+        if (isNpmManagedPath(fromPkg)) {
+          npmFallback = npmFallback ?? fromPkg;
+          continue;
+        }
+        return fromPkg;
+      }
 
       if (IS_WIN && !resolved.endsWith('.cmd')) {
         const target = resolveWindowsShim(resolved + '.cmd');
-        if (target) return target;
+        if (target) {
+          if (isNpmManagedPath(target)) {
+            npmFallback = npmFallback ?? target;
+            continue;
+          }
+          return target;
+        }
       }
     } catch {
-      return resolved;
+      if (!isNpmManagedPath(resolved)) return resolved;
+      npmFallback = npmFallback ?? resolved;
     }
+  }
+
+  if (npmFallback) {
+    // Check platform candidates first — prefer native installs (e.g. Brew) over npm
+    const candidates = getPlatformCandidates();
+    for (const candidate of candidates) {
+      if (existsSync(candidate) && !isNpmManagedPath(candidate)) {
+        return realpath(candidate);
+      }
+    }
+    return npmFallback;
   }
 
   const candidates = getPlatformCandidates();
