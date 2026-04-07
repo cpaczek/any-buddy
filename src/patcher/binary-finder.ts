@@ -53,7 +53,8 @@ function isNpmManagedPath(resolvedPath: string): boolean {
   return (
     lower.includes('node_modules') ||
     lower.includes('.npm-global') ||
-    lower.includes(join('npm', 'node_modules').toLowerCase())
+    lower.includes('.nvm/') ||
+    lower.includes('/fnm/')
   );
 }
 
@@ -137,7 +138,7 @@ export function getClaudeVersion(binaryPath: string): string | null {
   try {
     const output = execSync(`"${binaryPath}" --version`, {
       encoding: 'utf-8',
-      timeout: 10000,
+      timeout: 3000,
       stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
     // Output is like "2.1.92 (Claude Code)" — extract the version number
@@ -215,7 +216,8 @@ export function findAllClaudeBinaries(): ClaudeBinaryInfo[] {
   const allOnPath = whichAll('claude');
   for (const onPath of allOnPath) {
     const resolved = resolveOneBinary(onPath);
-    if (resolved) addCandidate(resolved);
+    // Fall back to the raw path if resolveOneBinary couldn't find a large binary
+    addCandidate(resolved ?? realpath(onPath));
   }
 
   // From platform candidates

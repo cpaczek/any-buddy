@@ -174,6 +174,10 @@ export async function selectClaudeBinary(binaries: ClaudeBinaryInfo[]): Promise<
   const supported = binaries.filter((b) => b.supported);
   const unsupported = binaries.filter((b) => !b.supported);
 
+  if (supported.length === 0) {
+    throw new Error('No supported Claude Code installation found.');
+  }
+
   const choices = [
     ...supported.map((b) => ({
       name: `${chalk.green(SOURCE_LABELS[b.source])}  v${b.version}  ${chalk.dim(b.path)}`,
@@ -194,5 +198,6 @@ export async function selectClaudeBinary(binaries: ClaudeBinaryInfo[]): Promise<
   return select({
     message: 'Multiple Claude Code installations found — which one should any-buddy patch?',
     choices,
+    loop: false,
   });
 }
