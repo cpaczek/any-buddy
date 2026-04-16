@@ -166,8 +166,8 @@ interface SetupResult {
   useNodeHash: boolean;
 }
 
-function runSetup(): SetupResult {
-  const preflight = runPreflight({ requireBinary: true });
+async function runSetup(): Promise<SetupResult> {
+  const preflight = await runPreflight({ requireBinary: true });
   if (!preflight.ok || !preflight.binaryPath) {
     process.exit(1);
   }
@@ -202,7 +202,7 @@ export async function runInteractive(
 ): Promise<void> {
   if (!skipBanner) banner();
 
-  const { userId, binaryPath, useNodeHash } = runSetup();
+  const { userId, binaryPath, useNodeHash } = await runSetup();
 
   let desired: DesiredTraits;
   try {
@@ -222,7 +222,7 @@ export async function runInteractiveWithTraits(
   desired: DesiredTraits,
   flags: CliFlags = {},
 ): Promise<void> {
-  const { userId, binaryPath, useNodeHash } = runSetup();
+  const { userId, binaryPath, useNodeHash } = await runSetup();
   await applyDesiredTraits(desired, flags, { userId, binaryPath, useNodeHash });
 }
 

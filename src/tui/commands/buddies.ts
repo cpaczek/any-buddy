@@ -48,7 +48,7 @@ async function selectBuddyFallback(entries: GalleryEntry[]): Promise<string | nu
 export async function runBuddies(): Promise<void> {
   banner();
 
-  const preflight = runPreflight({ requireBinary: true });
+  const preflight = await runPreflight({ requireBinary: true });
   if (!preflight.ok || !preflight.binaryPath) {
     process.exit(1);
   }

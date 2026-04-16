@@ -73,7 +73,7 @@ export async function runPreview(flags: CliFlags = {}): Promise<void> {
     return;
   }
 
-  const preflight = runPreflight({ requireBinary: false });
+  const preflight = await runPreflight({ requireBinary: false });
   if (!preflight.ok) process.exit(1);
 
   if (allTraitsFlagged(flags)) {

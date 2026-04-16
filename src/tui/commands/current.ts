@@ -9,7 +9,7 @@ import { banner, showPet } from '../display.ts';
 
 export async function runCurrent(): Promise<void> {
   banner();
-  const preflight = runPreflight({ requireBinary: false });
+  const preflight = await runPreflight({ requireBinary: false });
   if (!preflight.ok) process.exit(1);
   const userId = preflight.userId;
   console.log(chalk.dim(`  User ID: ${userId.slice(0, 12)}...`));
