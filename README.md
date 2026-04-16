@@ -122,6 +122,28 @@ any-buddy --preset "Arcane Dragon" -y
   <img src="assets/options.svg" alt="Customization options" width="700">
 </p>
 
+## Claude Code Skill
+
+any-buddy also ships as a standalone **Claude Code skill** — a slash command that lets you customize your companion pet directly from a Claude Code conversation, without running the CLI.
+
+### Install the Skill
+
+Copy the skill directory to your Claude Code skills folder:
+
+```bash
+# From a cloned repo
+cp -r skill ~/.claude/skills/customize-claude-buddy
+
+# Or from an npm install
+cp -r $(npm root -g)/any-buddy/skill ~/.claude/skills/customize-claude-buddy
+```
+
+### Usage
+
+Once installed, just tell Claude Code to customize your buddy — the skill activates automatically. It walks you through species, rarity, eyes, and hat selection with ASCII art previews, then patches your binary and sets up auto-repair.
+
+The skill runs on **Node.js only** (no Bun required) and has **zero dependencies** — all logic is self-contained in the `scripts/` directory.
+
 ## Restoring
 
 ```bash
