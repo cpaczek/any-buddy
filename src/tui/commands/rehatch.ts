@@ -20,7 +20,7 @@ export async function runRehatch(): Promise<void> {
   console.log();
 
   const proceed = await confirm({
-    message: `Delete "${name}" so Claude Code generates a fresh companion on next /buddy?`,
+    message: `Delete "${name}" so Claude Code generates a fresh companion on next /hatch?`,
     default: false,
   });
 
@@ -31,5 +31,5 @@ export async function runRehatch(): Promise<void> {
 
   deleteCompanion();
   console.log(chalk.green(`\n  Companion "${name}" deleted.`));
-  console.log(chalk.dim('  Run /buddy in Claude Code to hatch a new one.\n'));
+  console.log(chalk.dim('  Run /hatch in Claude Code to hatch a new one.\n'));
 }

@@ -51,7 +51,7 @@ export function renameCompanion(newName: string): void {
     throw new Error(`Failed to parse Claude config at ${configPath}`);
   }
   if (!config.companion) {
-    throw new Error('No companion found in config. Run /buddy in Claude Code first to hatch one.');
+    throw new Error('No companion found in config. Run /hatch in Claude Code first to hatch one.');
   }
   config.companion.name = newName;
   writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', { mode: 0o600 });
@@ -81,7 +81,7 @@ export function setCompanionPersonality(personality: string): void {
     throw new Error(`Failed to parse Claude config at ${configPath}`);
   }
   if (!config.companion) {
-    throw new Error('No companion found in config. Run /buddy in Claude Code first to hatch one.');
+    throw new Error('No companion found in config. Run /hatch in Claude Code first to hatch one.');
   }
   config.companion.personality = personality;
   writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', { mode: 0o600 });

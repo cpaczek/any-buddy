@@ -149,7 +149,7 @@ Usage:
   any-buddy apply [--silent]         Re-apply saved pet after update
   any-buddy restore                  Restore original pet
   any-buddy buddies                  Browse and switch between your buddies
-  any-buddy rehatch                  Delete companion to re-hatch via /buddy
+  any-buddy rehatch                  Delete companion to re-hatch via /hatch
 
 Options:
   --all                  (preview only) Dump all preset builds with sprites to stdout
