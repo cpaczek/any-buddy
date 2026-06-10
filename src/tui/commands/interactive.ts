@@ -486,7 +486,7 @@ async function applyDesiredTraitsSequential(
     console.log(chalk.dim('\n  No companion hatched yet — the visual patch has been applied.'));
     console.log(
       chalk.dim(
-        '  Run /buddy in Claude Code to hatch your companion and get a name & personality.',
+        '  Run /hatch in Claude Code to hatch your companion and get a name & personality.',
       ),
     );
     console.log(chalk.dim('  Then run any-buddy again to customize the name and personality.'));
@@ -511,10 +511,10 @@ async function applyDesiredTraitsSequential(
         '\n  Done! Quit all Claude Code sessions and relaunch to see your new pet.',
       ),
     );
-    console.log(chalk.dim('  Then run /buddy to meet your new companion.'));
+    console.log(chalk.dim('  Then run /hatch to meet your new companion.'));
   } else {
     console.log(
-      chalk.bold.green('\n  Done! Launch Claude Code and run /buddy to see your new pet.'),
+      chalk.bold.green('\n  Done! Launch Claude Code and run /hatch to see your new pet.'),
     );
   }
   console.log(

@@ -75,7 +75,7 @@ any-buddy preview            # Browse without applying
 any-buddy apply              # Re-apply after Claude Code update
 any-buddy restore            # Restore original pet
 any-buddy buddies            # Browse and switch between your buddies
-any-buddy rehatch            # Delete companion, re-hatch via /buddy
+any-buddy rehatch            # Delete companion, re-hatch via /hatch
 ```
 
 ### Non-Interactive Mode

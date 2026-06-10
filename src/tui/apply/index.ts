@@ -389,10 +389,10 @@ export async function runApplyTUI(
             addSpacer();
             if (running) {
               addText('  Done! Quit all Claude Code sessions and relaunch.', RARITY_HEX.legendary);
-              addText('  Then run /buddy to meet your new companion.', DIM_COLOR);
+              addText('  Then run /hatch to meet your new companion.', DIM_COLOR);
             } else {
               addText(
-                '  Done! Launch Claude Code and run /buddy to see your new pet.',
+                '  Done! Launch Claude Code and run /hatch to see your new pet.',
                 RARITY_HEX.uncommon,
               );
             }
